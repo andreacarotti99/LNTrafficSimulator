@@ -6,6 +6,9 @@ from collections import Counter
 
 from .genetic_routing import GeneticPaymentRouter
 
+# test
+def test():
+
 def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions=True, cost_prefix="", weight="total_fee", required_length=None):
     G = G_origi.copy()# copy due to forthcoming graph capacity changes!!!
     capacity_map = copy.deepcopy(init_capacities)
