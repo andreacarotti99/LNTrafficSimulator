@@ -26,3 +26,15 @@ def sample_transactions(node_variables, amount_in_satoshi, K, eps, active_provid
         print("Number of loop transactions (removed):", K-len(transactions))
         print("Merchant target ratio:", len(transactions[transactions["target"].isin(active_providers)]) / len(transactions))
     return transactions[["transaction_id","source","target","amount_SAT"]]
+
+
+def sample_transactions_fixed_nodes(node_variables, amount_in_satoshi, K):
+    nodes = list(node_variables["pub_key"])
+    src_node = np.random.choice(nodes, size=1, replace=True)[0]
+    trg_node = np.random.choice(nodes, size=1, replace=True)[0]
+    src_selected = [src_node] * K
+    trg_selected = [trg_node] * K
+    transactions = pd.DataFrame(list(zip(src_selected, trg_selected)), columns=["source","target"])
+    transactions["amount_SAT"] = amount_in_satoshi
+    transactions["transaction_id"] = transactions.index
+    return transactions[["transaction_id","source","target","amount_SAT"]]

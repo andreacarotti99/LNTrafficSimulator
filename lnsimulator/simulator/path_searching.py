@@ -3,11 +3,9 @@ import pandas as pd
 import numpy as np
 import copy
 from collections import Counter
-
 from .genetic_routing import GeneticPaymentRouter
+from .distance_functions import *
 
-# test
-def test():
 
 def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions=True, cost_prefix="", weight="total_fee", required_length=None):
     G = G_origi.copy()# copy due to forthcoming graph capacity changes!!!
@@ -18,6 +16,7 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
     router_fee_tuples = []
     hashed_transactions = {}
     genetic_rounds = []
+
     for idx, row in transactions.iterrows():
         p, cost = [], None
         try:
@@ -25,7 +24,17 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
             if (not S in G.nodes()) or (not T in G.nodes()):
                 shortest_paths.append((row["transaction_id"], cost, len(p)-1, p))
                 continue
-            p = nx.shortest_path(G, source=S, target=T, weight=weight)
+
+            # HERE WE EDIT THE SHORTEST PATH FUNCTION AND WE CHANGE THE WEIGHT BETWEEN EDGES
+
+            p = nx.shortest_path(G, source=S, target=T, weight=weight_between_edges_distance_function(S, T, {}, G))
+            # print("Length p without highest degree nodes: " + str(len(p)) + "\n")
+            # print(p1_without_highest_degree_node)
+
+            # p = nx.shortest_path(G, source=S, target=T, weight=degree_distance_function(S, T, {}, G))
+            # p = nx.shortest_path(G, source=S, target=T)
+
+
             if required_length != None:
                 if len(p) > 2 and len(p)-1 < required_length:
                     # extend only non-direct short chanels!
@@ -90,7 +99,11 @@ def process_forward_edge(capacity_map, G, amount_in_satoshi, src, trg):
         raise RuntimeError("forward %i: %s-%s" % (cap,src,trg))
     if cap < 2*amount_in_satoshi: # cannot route more transactions
         removed = True
-        G.remove_edge(src, trg)
+        try:
+            if src in G.nodes() and trg in G.nodes():
+                G.remove_edge(src, trg)
+        except:
+            pass
         if is_trg:
             G.remove_edge(src, trg+'_trg')
     capacity_map[(src,trg)] = [cap-amount_in_satoshi, fee, is_trg, total_cap]

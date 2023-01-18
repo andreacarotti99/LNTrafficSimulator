@@ -6,7 +6,8 @@ from tqdm import tqdm
 import functools
 import concurrent.futures
 
-from .transaction_sampling import sample_transactions
+
+from .transaction_sampling import sample_transactions, sample_transactions_fixed_nodes
 from .graph_preprocessing import *
 from .path_searching import get_shortest_paths
 
@@ -16,6 +17,10 @@ def shortest_paths_with_exclusion(capacity_map, G, cost_prefix, weight, hash_buc
     H.remove_node(node)
     if node + "_trg" in G.nodes():
         H.remove_node(node + "_trg") # delete node copy as well
+
+    # k = 0
+    # L = remove_high_degree_nodes(H.copy(), k)
+
     new_paths, _, _, _ = get_shortest_paths(capacity_map, H, bucket_transactions,  hash_transactions=False, cost_prefix=cost_prefix, weight=weight)
     new_paths["node"] = node
     return new_paths
@@ -41,6 +46,7 @@ class TransactionSimulator():
         self.edges = prepare_edges_for_simulation(edges, amount_sat, drop_disabled, drop_low_cap, time_window, verbose=self.verbose)
         self.node_variables, self.merchants, active_ratio = init_node_params(self.edges, merchants, verbose=self.verbose)
         self.transactions = sample_transactions(self.node_variables, amount_sat, count, epsilon, self.merchants, verbose=self.verbose)
+        # self.transactions = sample_transactions_fixed_nodes(self.node_variables, amount_sat, count)
         self.params = {
             "amount":amount_sat,
             "count":count,
@@ -50,6 +56,9 @@ class TransactionSimulator():
             "drop_low_cap": drop_low_cap,
             "time_window":time_window
         }
+
+
+
     
     def simulate(self, weight="total_fee", with_node_removals=False, max_threads=2, excluded=[], required_length=None, cap_change_nodes=[], capacity_fraction=1.0):
         edges_tmp = self.edges.copy()
