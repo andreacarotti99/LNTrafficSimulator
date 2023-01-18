@@ -63,8 +63,9 @@ def main():
 
     simulate_incrementally_removing_high_degree_nodes(highest_degree_nodes_to_remove, directed_edges, providers, amount, count, drop_disabled, drop_low_cap, with_depletion, find_alternative_paths)
 
-np.random.seed(1)
-main()
+if __name__ == "__main__":
+    np.random.seed(1)
+    main()
 
 
 '''
