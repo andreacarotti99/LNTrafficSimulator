@@ -8,6 +8,7 @@ from lnsimulator.simulator.remove_transactions import filter_transactions
 from lnsimulator.simulator.transaction_sampling import sample_transactions
 from lnsimulator.simulator.transaction_simulator import get_shortest_paths_with_node_removals, \
     get_total_income_for_routers, get_total_fee_for_sources
+from lnsimulator.simulator.useful_functions import *
 
 
 class TransactionSimulatorDifferentTopologies():
@@ -34,6 +35,8 @@ class TransactionSimulatorDifferentTopologies():
         alternative_paths_list = []
         all_router_fees_list = []
         total_depletions_list = []
+        gini_coefficient_list = []
+        avg_degree_list = []
 
         edges_tmp = self.edges.copy()
 
@@ -49,11 +52,12 @@ class TransactionSimulatorDifferentTopologies():
         # remove the transactions that have as src and trg the k highest_degree_nodes
         self.transactions = filter_transactions(self.transactions, num_of_highest_degree_nodes_to_remove, G)
 
+        '''Here we start the multiple iterations considering different topologies'''
         for i in range(num_of_highest_degree_nodes_to_remove+1):
-            print(G.number_of_nodes())
+            print("Simulation removing " + str(i) + " nodes...")
             if i > 0:
                 G = remove_highest_degree_node(G)
-            print(G.number_of_nodes())
+            print("\nNodes: " + str(G.number_of_nodes()))
             if len(excluded) > 0:
                 print(G.number_of_edges(), G.number_of_nodes())
                 for node in excluded:
@@ -99,12 +103,22 @@ class TransactionSimulatorDifferentTopologies():
             all_router_fees_list.append(all_router_fees)
             total_depletions_list.append(total_depletions)
 
+            gini_coefficient = compute_gini_coefficient_graph(G)
+            gini_coefficient_list.append(gini_coefficient)
+            avg_degree_list.append(avg_degree(G))
+            # draw_lorenz_curve(G)
+            # print("avg degree:")
+
+
             transactions = self.transactions
             successful_transactions = transactions[transactions['success'] == True]
 
 
 
-        return shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, G
+
+
+
+        return shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, G, gini_coefficient_list, avg_degree_list
 
 
 

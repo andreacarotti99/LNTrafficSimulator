@@ -36,7 +36,10 @@ def get_shortest_paths_with_node_removals(capacity_map, G, hashed_transactions, 
         alternative_paths = []
         for hash_bucket_item in tqdm(hashed_transactions.items(), mininterval=10):
             alternative_paths.append(shortest_paths_with_exclusion(capacity_map, G, cost_prefix, weight, hash_bucket_item))
-    return pd.concat(alternative_paths)
+    try:
+        return pd.concat(alternative_paths)
+    except:
+        return
 
 class TransactionSimulator():
     def __init__(self, edges, merchants, amount_sat, count, epsilon=0.8, drop_disabled=True, drop_low_cap=True, with_depletion=True, time_window=None, verbose=False):

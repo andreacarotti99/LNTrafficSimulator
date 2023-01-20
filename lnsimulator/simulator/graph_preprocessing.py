@@ -92,6 +92,11 @@ def init_capacities(edges, transactions, amount_sat, verbose=False):
     # [current_cap, total_fee, is_trg, total_cap]
     vals = [list(item) for item in zip([None]*len(edges), edges["total_fee"], is_trg, edges["capacity"])]
     capacity_map = dict(zip(keys,vals))
+
+    # keys: ('03...624', '03...736d')
+    # vals: [None, 1.02, True, 300000]
+    # capacity_map: {('03...624', '03...736d') : [None, 1.02, True, 300000], ..., ('03...624', '03...736d') : [None, 1.02, True, 300000]}
+
     # extract channels
     channels = set()
     for s, t in keys:
@@ -101,7 +106,11 @@ def init_capacities(edges, transactions, amount_sat, verbose=False):
             channels.add((s,t))
     edges_with_capacity = populate_capacities(channels, capacity_map, amount_sat)
     if verbose:
-        print("Edges with capacity: %i->%i" % (len(edges),len(edges_with_capacity))) 
+        print("Edges with capacity: %i->%i" % (len(edges),len(edges_with_capacity)))
+
+    print("Edges with capacity:")
+    print(edges_with_capacity.columns)
+
     return capacity_map, edges_with_capacity
     
 def populate_capacities(channels, capacity_map, amount_sat):

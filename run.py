@@ -14,7 +14,7 @@ def simulate_incrementally_removing_high_degree_nodes(k, directed_edges, provide
     print("\n# Simulate incrementally removing top " + str(k) + " high degree nodes")
     simulator = ts_topologies.TransactionSimulatorDifferentTopologies(directed_edges, providers, amount, count, drop_disabled=drop_disabled, drop_low_cap=drop_low_cap, with_depletion=with_depletion)
     transactions = simulator.transactions
-    shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, FinalGraph = simulator.simulate_with_multiple_topologies(weight="total_fee", with_node_removals=find_alternative_paths, max_threads=1, num_of_highest_degree_nodes_to_remove=k)
+    shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, FinalGraph, gini_coefficient_list, avg_degree_list = simulator.simulate_with_multiple_topologies(weight="total_fee", with_node_removals=find_alternative_paths, max_threads=1, num_of_highest_degree_nodes_to_remove=k)
 
     # shortest_paths is a df:
     # 'transaction_id', 'original_cost', 'length', 'path'
@@ -30,29 +30,54 @@ def simulate_incrementally_removing_high_degree_nodes(k, directed_edges, provide
     nodes_removed = []
 
     for i in range(len(all_router_fees_list)):
-        print("Average all routers fee removing " + str(i) + " highest degree nodes: " + str(all_router_fees_list[i]['fee'].mean()))
+        print("\nAverage all routers fee removing " + str(i) + " highest degree nodes: " + str(all_router_fees_list[i]['fee'].mean()))
         print("Sum of all routers fee removing " + str(i) + " highest degree nodes: " + str(all_router_fees_list[i]['fee'].sum()))
+        print("Average path length removing " + str(i) + " highest degree nodes: " + str(shortest_paths_list[i]['length'].mean()))
+
+        nodes_removed.append(i)
+        average_fees_incrementally_removing_nodes.append(all_router_fees_list[i]['fee'].mean())
+        print("Gini coefficient removing " + str(i) + " highest degree nodes: " + str(gini_coefficient_list[i]))
+    # plt.plot(nodes_removed, average_fees_incrementally_removing_nodes)
+
+    draw_total_fees_income_removing_highest_degree_nodes(all_router_fees_list)
+    draw_avg_degree_nodes_removing_highest_degree_nodes(avg_degree_list)
+    return
+
+def draw_total_fees_income_removing_highest_degree_nodes(all_router_fees_list):
+    total_fees_incrementally_removing_nodes = []
+    nodes_removed = []
+    for i in range(len(all_router_fees_list)):
         nodes_removed.append(i)
         total_fees_incrementally_removing_nodes.append(all_router_fees_list[i]['fee'].sum())
-        average_fees_incrementally_removing_nodes.append(all_router_fees_list[i]['fee'].mean())
-
     plt.plot(nodes_removed, total_fees_incrementally_removing_nodes)
-    # plt.plot(nodes_removed, average_fees_incrementally_removing_nodes)
+    plt.title("Total income of all nodes removing incrementally highest degree nodes")
+    plt.xlabel("Number of highest degree nodes removed")
+    plt.ylabel("Sum of all satoshi earned by all nodes")
     plt.show()
+    return
 
+def draw_avg_degree_nodes_removing_highest_degree_nodes(avg_degree_list):
+    nodes_removed = []
+    for i in range(len(avg_degree_list)):
+        nodes_removed.append(i)
+    plt.plot(nodes_removed, avg_degree_list)
+    plt.title("Average degree of the graph removing incrementally highest degree nodes")
+    plt.xlabel("Number of highest degree nodes removed")
+    plt.ylabel("Avg degree")
+    plt.show()
     return
 
 def main():
     data_dir = "ln_data" # path to the ln_data folder that contains the downloaded data
     amount = 20000 # original amount in satoshi of each transaction
-    count = 1000 # number of transactions to simulate
+    count = 100 # number of transactions to simulate
     epsilon = 0 # percentage of merchants in the network
     drop_disabled = True # drop temporarily disabled channels
     drop_low_cap = True # drop channels with capacity less than amount
     with_depletion = True # the available channel capacity is mantained for both endpoints
     find_alternative_paths = True
     cost_function = "standard_dijkstra"
-    highest_degree_nodes_to_remove = 10
+    highest_degree_nodes_to_remove = 3
 
     print("# 1. Load LN graph data")
     directed_edges = preprocess_json_file("%s/sample.json" % data_dir)
