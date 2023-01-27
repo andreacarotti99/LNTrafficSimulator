@@ -28,13 +28,18 @@ def sample_transactions(node_variables, amount_in_satoshi, K, eps, active_provid
     return transactions[["transaction_id","source","target","amount_SAT"]]
 
 
-def sample_transactions_fixed_nodes(node_variables, amount_in_satoshi, K):
-    nodes = list(node_variables["pub_key"])
-    src_node = np.random.choice(nodes, size=1, replace=True)[0]
-    trg_node = np.random.choice(nodes, size=1, replace=True)[0]
-    src_selected = [src_node] * K
-    trg_selected = [trg_node] * K
-    transactions = pd.DataFrame(list(zip(src_selected, trg_selected)), columns=["source","target"])
+def sample_transactions_fixed_nodes(transactions, amount_in_satoshi, trans_to_generate, index):
+    # print(transactions['source'])
+    src_node = np.random.choice(transactions['source'], size=1, replace=True)[0]
+    trg_node = np.random.choice(transactions['target'], size=1, replace=True)[0]
+    while trg_node == src_node:
+        trg_node = np.random.choice(transactions['target'], size=1, replace=True)[0]
+    src_selected = [src_node] * trans_to_generate
+    trg_selected = [trg_node] * trans_to_generate
+    transactions = pd.DataFrame(list(zip(src_selected, trg_selected)), columns=["source", "target"])
     transactions["amount_SAT"] = amount_in_satoshi
-    transactions["transaction_id"] = transactions.index
+    transactions["transaction_id"] = index
+    # print("Generated transaction from: " + src_selected[0] + " to " + trg_selected[0])
     return transactions[["transaction_id","source","target","amount_SAT"]]
+
+

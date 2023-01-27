@@ -1,6 +1,6 @@
 def weight_between_edges_distance_function(u, v, data, G):
     # Get the weight of the edge between the two nodes
-    return data.get('total_fee', 1)
+    return data.get('total_fee', 0)
 
 def degree_distance_function(u, v, data, G):
     # Get the weight of the edge between the two nodes
