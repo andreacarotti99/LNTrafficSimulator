@@ -12,11 +12,12 @@ def load_temp_data(json_files, node_keys=["pub_key","last_update"], edge_keys=["
             except json.JSONDecodeError:
                 print("JSONDecodeError: " + json_f)
                 continue
-        new_nodes = pd.DataFrame(tmp_json["nodes"])[node_keys]
+        new_nodes = pd.DataFrame(tmp_json["nodes"])[node_keys]  # creates a dataframe that contains all the nodes and only the [node_keys] as columns
         new_edges = pd.DataFrame(tmp_json["edges"])[edge_keys]
-        new_nodes["snapshot_id"] = idx
-        new_edges["snapshot_id"] = idx
-        print(json_f, len(new_nodes), len(new_edges))
+        new_nodes["snapshot_id"] = idx  # used to tell from what snapshot (json file) was that node obtained
+        new_edges["snapshot_id"] = idx  # used to tell from what snapshot (json file) was that edge obtained
+        print("File: " + json_f)
+        print("Nodes: " + str(len(new_nodes)) + " Edges: " + str(len(new_edges)))
         node_info.append(new_nodes)
         edge_info.append(new_edges)
     edges = pd.concat(edge_info)
@@ -31,7 +32,7 @@ def generate_directed_graph(edges, policy_keys=['disabled', 'fee_base_msat', 'fe
     """Generate directed graph data from undirected payment channels."""
     directed_edges = []
     indices = edges.index
-    for idx in tqdm(indices):
+    for idx in tqdm(indices):  # tqdm is used to display a progress bar in the console
         row = edges.loc[idx]
         e1 = [row[x] for x in ["snapshot_id","node1_pub","node2_pub","last_update","channel_id","capacity"]]
         e2 = [row[x] for x in ["snapshot_id","node2_pub","node1_pub","last_update","channel_id","capacity"]]
@@ -54,7 +55,12 @@ def preprocess_json_file(json_file):
     print("\ni.) Load data")
     EDGE_KEYS = ["node1_pub","node2_pub","last_update","capacity","channel_id",'node1_policy','node2_policy']
     nodes, edges = load_temp_data(json_files, edge_keys=EDGE_KEYS)
-    print(len(nodes), len(edges))
+
+    # nodes and edges are two df:
+    # nodes: "pub_key","last_update"
+    # edges: "node1_pub","node2_pub","last_update","capacity","channel_id",'node1_policy','node2_policy'
+
+    print("Nodes: " + str(len(nodes)) + " Edges: " + str(len(edges)))
     print("Remove records with missing node policy")
     print(edges.isnull().sum() / len(edges))
     origi_size = len(edges)
@@ -69,5 +75,4 @@ def preprocess_json_file(json_file):
     directed_df = directed_df.fillna({"disabled":False,"fee_base_msat":1000,"fee_rate_milli_msat":1,"min_htlc":1000})
     for col in ["fee_base_msat","fee_rate_milli_msat","min_htlc"]:
         directed_df[col] = directed_df[col].astype("float64")
-    return directed_df
-    
+    return directed_df, edges

@@ -28,16 +28,13 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
                 shortest_paths.append((row["transaction_id"], cost, len(p)-1, p))
                 continue
 
-            # HERE WE EDIT THE SHORTEST PATH FUNCTION AND WE CHANGE THE WEIGHT BETWEEN EDGES
+            # TO EDIT THE SHORTEST PATH FUNCTION AND CHANGE THE WEIGHT BETWEEN EDGES:
             # p = nx.shortest_path(G, source=S, target=T, weight=weight_between_edges_distance_function(S, T, {}, G))
             p = nx.shortest_path(G, source=S, target=T, weight='total_fee')
             # total_cost = nx.shortest_path_length(G, source=S, target=T, weight=weight_between_edges_distance_function(S, T, {}, G))
             total_weight_p = sum(G[u][v]['total_fee'] for u, v in zip(p, p[1:]))
 
-            # print("The path is:")
-            # print(p)
 
-            # print("Total weight of the path: " + str(total_weight))
 
             if required_length != None:
                 if len(p) > 2 and len(p)-1 < required_length:
@@ -80,8 +77,8 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
 
     return pd.DataFrame(shortest_paths, columns=["transaction_id", cost_prefix+"cost", "length", "path"]), hashed_transactions,  all_router_fees, total_depletions
 
-def get_shortest_paths_successful_generated_transactions(self, trans_to_generate, num_of_highest_degree_nodes_to_remove, init_capacities, G_origi, hash_transactions=True,
-                                                         cost_prefix="", weight="total_fee", required_length=None):
+def generate_successful_transactions(self, trans_to_generate, num_of_highest_degree_nodes_to_remove, init_capacities, G_origi, hash_transactions=True,
+                                     cost_prefix="", weight="total_fee", required_length=None):
     shortest_paths = []
     hashed_transactions = {}
     all_router_fees = pd.DataFrame(columns=['transaction_id','node','fee'])
@@ -91,11 +88,14 @@ def get_shortest_paths_successful_generated_transactions(self, trans_to_generate
 
     G_without_k_nodes = G_origi.copy()
 
+    print("\nHighest degree nodes that will be removed during simulation:")
     for i in range(num_of_highest_degree_nodes_to_remove):
         G_without_k_nodes = remove_highest_degree_node(G_without_k_nodes)
 
     new_cap_map = copy.deepcopy(init_capacities)
     k = 0
+
+    print("\nGenerating " + str(trans_to_generate) + " random transactions from the original sample...")
     while k < trans_to_generate:
         transaction = sample_transactions_fixed_nodes(self.transactions, self.amount, 1, k) # transaction is a dataframe with only one value
         sp, ht, arf, td = get_shortest_paths(new_cap_map, G_without_k_nodes, transaction, hash_transactions, cost_prefix, weight, required_length)
@@ -113,12 +113,14 @@ def get_shortest_paths_successful_generated_transactions(self, trans_to_generate
             new_transaction = {'transaction_id': k, 'source': transaction['source'].iloc[0], 'target': transaction['target'].iloc[0], 'amount_SAT': transaction['amount_SAT'].iloc[0]}
             new_transactions = new_transactions.append(new_transaction, ignore_index=True)
             # print("This is the new trans")
-            print("The path is:")
-            print(tr_path)
-            print(new_transaction)
+            print("\nTr. ID: " + str(new_transaction['transaction_id']))
+            print("Amount: " + str(new_transaction['amount_SAT']))
             print("Length: " + str(tr_length))
-            print("Cost: " + str(tr_fees_cost) + "\n")
+            print("Cost: " + str(tr_fees_cost))
+            print("Path:")
+            print(tr_path)
             k += 1
+    print("\nTransactions successfully generated\n")
     return pd.DataFrame(shortest_paths, columns=["transaction_id", cost_prefix+"cost", "length", "path"]), hashed_transactions, all_router_fees, total_depletions, new_transactions
 
 

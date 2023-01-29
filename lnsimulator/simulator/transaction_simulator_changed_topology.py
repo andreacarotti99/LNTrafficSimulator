@@ -3,7 +3,7 @@ import pandas as pd
 from lnsimulator.simulator.graph_preprocessing import generate_graph_for_path_search, init_capacities, \
     prepare_edges_for_simulation, init_node_params
 from lnsimulator.simulator.path_searching import get_shortest_paths, \
-    get_shortest_paths_successful_generated_transactions
+    generate_successful_transactions
 from lnsimulator.simulator.remove_nodes_from_graph import remove_highest_degree_node
 from lnsimulator.simulator.remove_transactions import filter_transactions
 from lnsimulator.simulator.transaction_sampling import sample_transactions
@@ -50,11 +50,12 @@ class TransactionSimulatorDifferentTopologies():
             current_capacity_map = None
             G = generate_graph_for_path_search(edges_tmp, self.transactions, self.amount)
 
-        print("Total nodes in the graph: " + str(G.number_of_nodes()))
+        print("Total nodes in the graph before removal: " + str(G.number_of_nodes()))
 
         trans_to_generate = self.transactions.shape[0]
-        shortest_paths, hashed_transactions, all_router_fees, total_depletions, self.transactions = get_shortest_paths_successful_generated_transactions(self, trans_to_generate, num_of_highest_degree_nodes_to_remove, copy.deepcopy(current_capacity_map), G, hash_transactions=with_node_removals, cost_prefix="original_", weight=weight, required_length=required_length)
-        # remove the transactions that have as src and trg the k highest_degree_nodes
+        shortest_paths, hashed_transactions, all_router_fees, total_depletions, self.transactions = generate_successful_transactions(self, trans_to_generate, num_of_highest_degree_nodes_to_remove, copy.deepcopy(current_capacity_map), G, hash_transactions=with_node_removals, cost_prefix="original_", weight=weight, required_length=required_length)
+
+        print("\nRemoving the transactions that have as src and trg the k highest_degree_nodes...")
         self.transactions = filter_transactions(self.transactions, num_of_highest_degree_nodes_to_remove, G)
 
 
@@ -62,7 +63,7 @@ class TransactionSimulatorDifferentTopologies():
         for i in range(num_of_highest_degree_nodes_to_remove+1):
 
             capacity_map_iteration = copy.deepcopy(current_capacity_map)
-            print("\nSimulation removing " + str(i) + " nodes...")
+            print("\nStarting simulation removing " + str(i) + " highest degree nodes...")
             if i > 0:
                 G = remove_highest_degree_node(G)
             print("\nNodes: " + str(G.number_of_nodes()))
@@ -84,6 +85,7 @@ class TransactionSimulatorDifferentTopologies():
 
             shortest_paths, hashed_transactions, all_router_fees, total_depletions = get_shortest_paths(capacity_map_iteration, G, self.transactions, hash_transactions=with_node_removals, cost_prefix="original_", weight=weight, required_length=required_length)
 
+            print("\nPath discovered for each transaction:")
             for h in range(shortest_paths.shape[0]):
                 print("\nTrans. id: " + str(shortest_paths['transaction_id'].iloc[h]))
                 print("Trans. cost: " + str(shortest_paths['original_cost'].iloc[h]))
@@ -91,32 +93,16 @@ class TransactionSimulatorDifferentTopologies():
                 print("Trans. path:")
                 print(shortest_paths['path'].iloc[h])
 
-
-            # print("Router fees other i")
-            # print(all_router_fees.values)
-            # print("Length trans")
-            # print(self.transactions.shape[0])
-            # print("Length all rout fees")
-            # print(all_router_fees.shape[0])
-            # print("List of transactions after shortest paths")
-            # print(self.transactions.values)
-            # print()
-
             success_tx_ids = set(shortest_paths["transaction_id"]) # this contains only successful transactions
-            # print("Num of suc trans")
-            # print(len(success_tx_ids))
-
             self.transactions["success"] = self.transactions["transaction_id"].apply(lambda x: x in success_tx_ids)
             print("Transactions simulated on original graph DONE")
             print("Transaction success rate:")
             print(self.transactions["success"].value_counts() / len(self.transactions))
 
-            # print(self.transactions["success"])
-
             if self.verbose:
                 print("Length distribution of optimal paths:")
                 print(shortest_paths["length"].value_counts())
-            if with_node_removals:
+            if with_node_removals:  # with_node_removals is find_alternative_paths in the parameters
                 print("Base fee optimization STARTED..")
                 alternative_paths = get_shortest_paths_with_node_removals(capacity_map_iteration, G, hashed_transactions, weight=weight, threads=max_threads)
                 print("Base fee optimization DONE")
@@ -134,11 +120,6 @@ class TransactionSimulatorDifferentTopologies():
             alternative_paths_list.append(alternative_paths)
             all_router_fees_list.append(all_router_fees)
             total_depletions_list.append(total_depletions)
-
-            print("Fees")
-            print(all_router_fees)
-            print("Transactions")
-            print(self.transactions)
 
             gini_coefficient = compute_gini_coefficient_graph(G)
             gini_coefficient_list.append(gini_coefficient)

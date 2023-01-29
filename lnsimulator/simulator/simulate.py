@@ -12,6 +12,6 @@ def simulate_incrementally_removing_high_degree_nodes(k, directed_edges, provide
     # all_router_fees is a df:  'transaction_id', 'node', 'fee'
     # transactions is a df:     'transaction_id', 'source', 'target', 'amount_SAT', 'success'
 
-    show_results(all_router_fees_list, shortest_paths_list, gini_coefficient_list, avg_degree_list)
+    show_results_total_fees(all_router_fees_list, shortest_paths_list, gini_coefficient_list, avg_degree_list)
 
-    return
+    return all_router_fees_list
