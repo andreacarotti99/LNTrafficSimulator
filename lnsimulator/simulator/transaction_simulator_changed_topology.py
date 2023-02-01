@@ -1,9 +1,11 @@
 import sys, os, json, copy
 import pandas as pd
+
+from lnsimulator.simulator.generate_transactions import generate_successful_transactions
+from lnsimulator.simulator.graph_nodes_splitting import *
 from lnsimulator.simulator.graph_preprocessing import generate_graph_for_path_search, init_capacities, \
     prepare_edges_for_simulation, init_node_params
-from lnsimulator.simulator.path_searching import get_shortest_paths, \
-    generate_successful_transactions
+from lnsimulator.simulator.path_searching import get_shortest_paths
 from lnsimulator.simulator.remove_nodes_from_graph import remove_highest_degree_node
 from lnsimulator.simulator.remove_transactions import filter_transactions
 from lnsimulator.simulator.transaction_sampling import sample_transactions
@@ -32,17 +34,18 @@ class TransactionSimulatorDifferentTopologies():
 
     def simulate_with_multiple_topologies(self, weight="total_fee", with_node_removals=False, max_threads=1,
                                           excluded=[], required_length=None, cap_change_nodes=[], capacity_fraction=1.0,
-                                          num_of_highest_degree_nodes_to_remove=0):
+                                          num_hdn_to_remove=0, num_hdn_to_split=0):
+        # Make lists for each graph considered: first element with all the nodes, second one without the hd node ...
         shortest_paths_list = []
         alternative_paths_list = []
         all_router_fees_list = []
         total_depletions_list = []
-        gini_coefficient_list = []
         avg_degree_list = []
+        G_list = []
 
         edges_tmp = self.edges.copy()
 
-        # with depletion means that the capacity map will change according to the transactions
+        # with depletion means that the capacity map will change once transactions are executed
         if self.with_depletion:
             current_capacity_map, edges_with_capacity = init_capacities(edges_tmp, self.transactions, self.amount, self.verbose)
             G = generate_graph_for_path_search(edges_with_capacity, self.transactions, self.amount)
@@ -50,17 +53,27 @@ class TransactionSimulatorDifferentTopologies():
             current_capacity_map = None
             G = generate_graph_for_path_search(edges_tmp, self.transactions, self.amount)
 
-        print("Total nodes in the graph before removal: " + str(G.number_of_nodes()))
+        print("Total nodes in the graph before modifications: " + str(G.number_of_nodes()))
 
+        #print("Current cap map:")
+        #print(current_capacity_map)
+
+        #print("Edges with capacity")
+        #print(edges_with_capacity.head(10))
+
+
+
+
+        # Preparing the number of transaction to sample
         trans_to_generate = self.transactions.shape[0]
-        shortest_paths, hashed_transactions, all_router_fees, total_depletions, self.transactions = generate_successful_transactions(self, trans_to_generate, num_of_highest_degree_nodes_to_remove, copy.deepcopy(current_capacity_map), G, hash_transactions=with_node_removals, cost_prefix="original_", weight=weight, required_length=required_length)
+        self.transactions = generate_successful_transactions(self, trans_to_generate, num_hdn_to_remove, copy.deepcopy(current_capacity_map), G, hash_transactions=with_node_removals, cost_prefix="original_", weight=weight, required_length=required_length)
 
         print("\nRemoving the transactions that have as src and trg the k highest_degree_nodes...")
-        self.transactions = filter_transactions(self.transactions, num_of_highest_degree_nodes_to_remove, G)
+        self.transactions = filter_transactions(self.transactions, num_hdn_to_remove, G)
 
 
         """Starting the multiple iterations considering different topologies"""
-        for i in range(num_of_highest_degree_nodes_to_remove+1):
+        for i in range(num_hdn_to_remove+1):
 
             capacity_map_iteration = copy.deepcopy(current_capacity_map)
             print("\nStarting simulation removing " + str(i) + " highest degree nodes...")
@@ -120,18 +133,14 @@ class TransactionSimulatorDifferentTopologies():
             alternative_paths_list.append(alternative_paths)
             all_router_fees_list.append(all_router_fees)
             total_depletions_list.append(total_depletions)
-
-            gini_coefficient = compute_gini_coefficient_graph(G)
-            gini_coefficient_list.append(gini_coefficient)
             avg_degree_list.append(avg_degree(G))
-            # draw_lorenz_curve(G)
-            # print("avg degree:")
+            G_list.append(G)
 
             transactions = self.transactions
             successful_transactions = transactions[transactions['success'] == True]
 
         # print(shortest_paths_list)
-        return shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, G, gini_coefficient_list, avg_degree_list
+        return shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, G_list, avg_degree_list
 
 
 

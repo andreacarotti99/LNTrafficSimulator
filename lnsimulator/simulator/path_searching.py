@@ -4,9 +4,6 @@ import numpy as np
 import copy
 from collections import Counter
 from .genetic_routing import GeneticPaymentRouter
-from .distance_functions import *
-from .remove_nodes_from_graph import remove_highest_degree_node
-from .transaction_sampling import sample_transactions_fixed_nodes
 
 
 
@@ -76,53 +73,6 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
     all_router_fees = pd.DataFrame(router_fee_tuples, columns=["transaction_id","node","fee"])
 
     return pd.DataFrame(shortest_paths, columns=["transaction_id", cost_prefix+"cost", "length", "path"]), hashed_transactions,  all_router_fees, total_depletions
-
-def generate_successful_transactions(self, trans_to_generate, num_of_highest_degree_nodes_to_remove, init_capacities, G_origi, hash_transactions=True,
-                                     cost_prefix="", weight="total_fee", required_length=None):
-    shortest_paths = []
-    hashed_transactions = {}
-    all_router_fees = pd.DataFrame(columns=['transaction_id','node','fee'])
-    total_depletions = dict()
-    new_transactions = pd.DataFrame(columns=['transaction_id', 'source', 'target', 'amount_SAT'])
-
-
-    G_without_k_nodes = G_origi.copy()
-
-    print("\nHighest degree nodes that will be removed during simulation:")
-    for i in range(num_of_highest_degree_nodes_to_remove):
-        G_without_k_nodes = remove_highest_degree_node(G_without_k_nodes)
-
-    new_cap_map = copy.deepcopy(init_capacities)
-    k = 0
-
-    print("\nGenerating " + str(trans_to_generate) + " random transactions from the original sample...")
-    while k < trans_to_generate:
-        transaction = sample_transactions_fixed_nodes(self.transactions, self.amount, 1, k) # transaction is a dataframe with only one value
-        sp, ht, arf, td = get_shortest_paths(new_cap_map, G_without_k_nodes, transaction, hash_transactions, cost_prefix, weight, required_length)
-
-        tr_id = sp['transaction_id'].iloc[0]
-        tr_fees_cost = sp[cost_prefix+'cost'].iloc[0]
-        tr_length = sp['length'].iloc[0]
-        tr_path = sp['path'].iloc[0]
-
-        if sp['length'].iloc[0] > 0:
-            shortest_paths.append((tr_id, tr_fees_cost, tr_length, tr_path))
-            hashed_transactions = {**hashed_transactions, **ht}
-            all_router_fees = all_router_fees.append(arf, ignore_index=True)
-            total_depletions = {**total_depletions, **td}
-            new_transaction = {'transaction_id': k, 'source': transaction['source'].iloc[0], 'target': transaction['target'].iloc[0], 'amount_SAT': transaction['amount_SAT'].iloc[0]}
-            new_transactions = new_transactions.append(new_transaction, ignore_index=True)
-            # print("This is the new trans")
-            print("\nTr. ID: " + str(new_transaction['transaction_id']))
-            print("Amount: " + str(new_transaction['amount_SAT']))
-            print("Length: " + str(tr_length))
-            print("Cost: " + str(tr_fees_cost))
-            print("Path:")
-            print(tr_path)
-            k += 1
-    print("\nTransactions successfully generated\n")
-    return pd.DataFrame(shortest_paths, columns=["transaction_id", cost_prefix+"cost", "length", "path"]), hashed_transactions, all_router_fees, total_depletions, new_transactions
-
 
 
 

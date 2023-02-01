@@ -2,6 +2,9 @@ import json
 from tqdm import tqdm
 import pandas as pd
 
+from lnsimulator.simulator.graph_nodes_splitting import split_hdn
+
+
 def load_temp_data(json_files, node_keys=["pub_key","last_update"], edge_keys=["node1_pub","node2_pub","last_update","capacity"]):
     """Load LN graph json files from several snapshots"""
     node_info, edge_info = [], []
@@ -49,7 +52,7 @@ def generate_directed_graph(edges, policy_keys=['disabled', 'fee_base_msat', 'fe
     directed_edges_df = pd.DataFrame(directed_edges, columns=cols)
     return directed_edges_df
 
-def preprocess_json_file(json_file):
+def preprocess_json_file(json_file, hdn_to_split=0):
     """Generate directed graph data (traffic simulator input format) from json LN snapshot file."""
     json_files = [json_file]
     print("\ni.) Load data")
@@ -65,6 +68,9 @@ def preprocess_json_file(json_file):
     print(edges.isnull().sum() / len(edges))
     origi_size = len(edges)
     edges = edges[(~edges["node1_policy"].isnull()) & (~edges["node2_policy"].isnull())]
+
+    # edges = split_hdn(edges, hdn_to_split)
+
     print(origi_size - len(edges))
     print("\nii.) Transform undirected graph into directed graph")
     directed_df = generate_directed_graph(edges)
