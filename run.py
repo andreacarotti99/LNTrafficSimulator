@@ -18,7 +18,7 @@ def main():
     highest_degree_nodes_to_split = 1
 
     print("# 1. Load LN graph data...")
-    directed_edges, undirected_edges = preprocess_json_file("%s/sample.json" % data_dir, highest_degree_nodes_to_split)
+    directed_edges, undirected_edges = preprocess_json_file("%s/graph.json" % data_dir, highest_degree_nodes_to_split)
 
     print("\n# 2. Load meta data...")
     node_meta = pd.read_csv("%s/1ml_meta_data.csv" % data_dir)
