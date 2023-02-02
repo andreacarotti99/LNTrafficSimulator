@@ -34,7 +34,7 @@ class TransactionSimulatorDifferentTopologies():
 
     def simulate_with_multiple_topologies(self, weight="total_fee", with_node_removals=False, max_threads=1,
                                           excluded=[], required_length=None, cap_change_nodes=[], capacity_fraction=1.0,
-                                          num_hdn_to_remove=0, num_hdn_to_split=0):
+                                          num_hdn_to_remove=0):
         # Make lists for each graph considered: first element with all the nodes, second one without the hd node ...
         shortest_paths_list = []
         alternative_paths_list = []

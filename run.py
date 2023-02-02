@@ -15,10 +15,12 @@ def main():
     with_depletion = True  # the available channel capacity is maintained for both endpoints
     find_alternative_paths = True
     highest_degree_nodes_to_remove = 0
-    highest_degree_nodes_to_split = 1
+    num_nodes_to_split = 2  # Indicates the number of highest degree nodes to split
+    split_by_edge = True  # if False the highest degree nodes are split by capacity
+
 
     print("# 1. Load LN graph data...")
-    directed_edges, undirected_edges = preprocess_json_file("%s/sample.json" % data_dir, highest_degree_nodes_to_split)
+    directed_edges, undirected_edges = preprocess_json_file("%s/sample.json" % data_dir, num_nodes_to_split, split_by_edge)
 
     print("\n# 2. Load meta data...")
     node_meta = pd.read_csv("%s/1ml_meta_data.csv" % data_dir)
@@ -26,8 +28,7 @@ def main():
 
     print("\n# 3. Start simulation...")
     G_list, all_router_fees_list, shortest_paths_list, avg_degree_list = \
-        simulate_incrementally_removing_high_degree_nodes(highest_degree_nodes_to_split,
-                                                        highest_degree_nodes_to_remove,
+        simulate_incrementally_removing_high_degree_nodes( highest_degree_nodes_to_remove,
                                                         directed_edges,
                                                         providers,
                                                         amount,

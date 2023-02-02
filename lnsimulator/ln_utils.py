@@ -1,8 +1,9 @@
 import json
 from tqdm import tqdm
 import pandas as pd
+import time
 
-from lnsimulator.simulator.graph_nodes_splitting import split_hdn
+from lnsimulator.simulator.graph_nodes_splitting import split_huge_nodes
 
 
 def load_temp_data(json_files, node_keys=["pub_key","last_update"], edge_keys=["node1_pub","node2_pub","last_update","capacity"]):
@@ -35,10 +36,13 @@ def generate_directed_graph(edges, policy_keys=['disabled', 'fee_base_msat', 'fe
     """Generate directed graph data from undirected payment channels."""
     directed_edges = []
     indices = edges.index
+
     for idx in tqdm(indices):  # tqdm is used to display a progress bar in the console
+        # print(idx)
         row = edges.loc[idx]
         e1 = [row[x] for x in ["snapshot_id","node1_pub","node2_pub","last_update","channel_id","capacity"]]
         e2 = [row[x] for x in ["snapshot_id","node2_pub","node1_pub","last_update","channel_id","capacity"]]
+
         if row["node2_policy"] == None:
             e1 += [None for x in policy_keys]
         else:
@@ -52,7 +56,7 @@ def generate_directed_graph(edges, policy_keys=['disabled', 'fee_base_msat', 'fe
     directed_edges_df = pd.DataFrame(directed_edges, columns=cols)
     return directed_edges_df
 
-def preprocess_json_file(json_file, hdn_to_split=0):
+def preprocess_json_file(json_file, num_nodes_to_split=0, split_by_edge=True):
     """Generate directed graph data (traffic simulator input format) from json LN snapshot file."""
     json_files = [json_file]
     print("\ni.) Load data")
@@ -63,13 +67,15 @@ def preprocess_json_file(json_file, hdn_to_split=0):
     # nodes: "pub_key","last_update"
     # edges: "node1_pub","node2_pub","last_update","capacity","channel_id",'node1_policy','node2_policy'
 
+    edges = split_huge_nodes(edges, num_nodes_to_split, split_by_edge)
+
     print("Nodes: " + str(len(nodes)) + " Edges: " + str(len(edges)))
     print("Remove records with missing node policy")
     print(edges.isnull().sum() / len(edges))
     origi_size = len(edges)
     edges = edges[(~edges["node1_policy"].isnull()) & (~edges["node2_policy"].isnull())]
 
-    # edges = split_hdn(edges, hdn_to_split)
+
 
     print(origi_size - len(edges))
     print("\nii.) Transform undirected graph into directed graph")
