@@ -121,8 +121,9 @@ def populate_capacities(channels, capacity_map, amount_sat):
         if (trg,src) in capacity_map:
             c2 = capacity_map[(trg,src)][3]
             cap = max(c1, c2)
-            rnd = np.random.random()
-            cap1, cap2 = cap * rnd, cap * (1.0-rnd)
+            #rnd = np.random.random()
+            #cap1, cap2 = #cap * rnd, cap * (1.0-rnd)
+            cap1, cap2 = cap / 2, cap / 2
             capacity_map[(trg,src)][0] = cap2
             if cap2 >= amount_sat:
                 edge_records.append((trg, src, cap2, capacity_map[(trg,src)][1]))
