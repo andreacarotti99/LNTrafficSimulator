@@ -21,7 +21,7 @@ def shortest_paths_with_exclusion(capacity_map, G, cost_prefix, weight, hash_buc
     # k = 0
     # L = remove_high_degree_nodes(H.copy(), k)
 
-    new_paths, _, _, _ = get_shortest_paths(capacity_map, H, bucket_transactions,  hash_transactions=False, cost_prefix=cost_prefix, weight=weight)
+    new_paths, _, _, _, _ = get_shortest_paths(capacity_map, H, bucket_transactions,  hash_transactions=False, cost_prefix=cost_prefix, weight=weight)
     new_paths["node"] = node
     return new_paths
 

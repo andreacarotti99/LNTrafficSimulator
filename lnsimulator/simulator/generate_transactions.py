@@ -20,13 +20,14 @@ def generate_successful_transactions(self, trans_to_generate, num_of_highest_deg
     new_cap_map = copy.deepcopy(init_capacities)
     k = 0
     print("\nGenerating " + str(trans_to_generate) + " random transactions from the original sample...")
+
     while k < trans_to_generate:
         transaction = sample_transactions_fixed_nodes(self.transactions, self.amount, 1, k) # transaction is a dataframe with only one value
-        sp, ht, arf, td = get_shortest_paths(new_cap_map, G_without_k_nodes, transaction, hash_transactions, cost_prefix, weight, required_length)
+        sp, ht, arf, td, rt = get_shortest_paths(new_cap_map, G_without_k_nodes, transaction, hash_transactions, cost_prefix, weight, required_length)
         tr_fees_cost = sp[cost_prefix+'cost'].iloc[0]
         tr_length = sp['length'].iloc[0]
         tr_path = sp['path'].iloc[0]
-        if sp['length'].iloc[0] > 0:  # if a path of length > 0 is found
+        if sp['length'].iloc[0] > 0 and tr_fees_cost > 0:  # if a path of length > 0 is found
             new_transaction = {'transaction_id': k, 'source': transaction['source'].iloc[0], 'target': transaction['target'].iloc[0], 'amount_SAT': transaction['amount_SAT'].iloc[0]}
             new_transactions = new_transactions.append(new_transaction, ignore_index=True)
             print("\nTr. ID: " + str(new_transaction['transaction_id']))
@@ -37,4 +38,7 @@ def generate_successful_transactions(self, trans_to_generate, num_of_highest_deg
             print(tr_path)
             k += 1
     print("\nTransactions successfully generated\n")
+
+    # print(new_cap_map)
+
     return new_transactions

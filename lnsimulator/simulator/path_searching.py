@@ -5,6 +5,14 @@ import copy
 from collections import Counter
 from .genetic_routing import GeneticPaymentRouter
 
+def update_routed_transactions(p, routed_transactions):
+    for i in range(1, len(p) - 1):
+        node = p[i]
+        if node in routed_transactions:
+            routed_transactions[node] += 1
+        else:
+            routed_transactions[node] = 1
+    return routed_transactions
 
 
 def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions=True, cost_prefix="", weight="total_fee", required_length=None):
@@ -16,6 +24,8 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
     router_fee_tuples = []
     hashed_transactions = {}
     genetic_rounds = []
+
+    routed_transactions = {}
 
     for idx, row in transactions.iterrows():
         p, cost = [], None
@@ -64,6 +74,8 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
             # print("The path is of length " + str(len(p)-1))
             # print(p)
             shortest_paths.append((row["transaction_id"], cost, len(p)-1, p))
+            routed_transactions = update_routed_transactions(p, routed_transactions)
+
     if hash_transactions:
         for node in hashed_transactions:
             hashed_transactions[node] = pd.DataFrame(hashed_transactions[node], columns=transactions.columns)
@@ -72,7 +84,8 @@ def get_shortest_paths(init_capacities, G_origi, transactions, hash_transactions
         print(cnt.most_common())
     all_router_fees = pd.DataFrame(router_fee_tuples, columns=["transaction_id","node","fee"])
 
-    return pd.DataFrame(shortest_paths, columns=["transaction_id", cost_prefix+"cost", "length", "path"]), hashed_transactions,  all_router_fees, total_depletions
+    # print(shortest_paths[-1][1])  # print the cost of the transaction
+    return pd.DataFrame(shortest_paths, columns=["transaction_id", cost_prefix+"cost", "length", "path"]), hashed_transactions,  all_router_fees, total_depletions, routed_transactions
 
 
 
@@ -80,9 +93,12 @@ def process_path(path, amount_in_satoshi, capacity_map, G, weight, with_depletio
     routers = {}
     depletions = []
     N = len(path)
+    # print_weights(G)
     for i in range(N-2):
         n1, n2 = path[i], path[i+1]
         routers[n2] = G[n1][n2][weight]
+        # print(str(n1) + " --> " + str(n2) + ": " + str(G[n1][n2][weight]))
+
         if with_depletion:
             n2_removed = process_forward_edge(capacity_map, G, amount_in_satoshi, n1, n2)
             if n2_removed:
@@ -95,6 +111,8 @@ def process_path(path, amount_in_satoshi, capacity_map, G, weight, with_depletio
         if n2_removed:
             depletions.append(n2)
         process_backward_edge(capacity_map, G, amount_in_satoshi, n2, n1)
+    # print("\nHop costs:")
+    # print(routers)
     return np.sum(list(routers.values())), routers, depletions
 
 def process_forward_edge(capacity_map, G, amount_in_satoshi, src, trg):
@@ -122,3 +140,10 @@ def process_backward_edge(capacity_map, G, amount_in_satoshi, src, trg):
             if is_trg:
                 G.add_weighted_edges_from([(src,trg+'_trg',0.0)], weight="total_fee")
         capacity_map[(src,trg)] = [cap+amount_in_satoshi, fee, is_trg, total_cap]
+
+
+
+def print_weights(G):
+    for n1, n2, weight_data in G.edges(data=True):
+        weight = weight_data['total_fee']
+        print("Edge from", n1, "to", n2, "with weight", weight)

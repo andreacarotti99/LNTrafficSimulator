@@ -46,14 +46,16 @@ def show_results_capacity_fees_ratio(nodes_fees, nodes_capacities):
     df = pd.DataFrame(nodes_fees.items(), columns=['node', 'total_fee'])
     df['capacity'] = df['node'].map(nodes_capacities)
     # df['ratio'] = df['total_fee']/df['capacity']
-    df['ratio'] = df['capacity'].divide(df['total_fee'], fill_value=0)
+    df['ratio'] = df['total_fee'].divide(df['capacity'], fill_value=0)
     df = df.sort_values(by='capacity',ascending=False)
+    df = df.head(80)
+
     # print(df.head(20))
     ax = df.plot(x='node', y='ratio',kind='bar')
-    plt.title("(Capacity) / (Fee) ratio for each node")
+    plt.title("Fee / Capacity ratio for each node")
     plt.suptitle("Capacity of each node is in descending order (->) - DESC")
     plt.xlabel('node')
-    plt.ylabel('Capacity / Total Fee')
+    plt.ylabel('Fee / Capacity')
     ax.set_xticklabels(df['node'],rotation=90, fontsize=4)
     plt.show()
     return
@@ -75,10 +77,14 @@ def show_results_degree_fees_ratio(nodes_fees, nodes_degrees):
     return
 
 
-def export_fees_degree_capacity(nodes_fees, nodes_degrees, nodes_capacities):
+def export_fees_degree_capacity(nodes_fees, nodes_degrees, nodes_capacities, routed_transactions):
     df = pd.DataFrame(nodes_fees.items(), columns=['node', 'total_fee'])
     df['degree'] = df['node'].map(nodes_degrees)
     df['capacity'] = df['node'].map(nodes_capacities)
+
+
+    df['routed_transactions'] = df['node'].map(routed_transactions)
+
     df["total_fee"] = df["total_fee"].astype('float64')
     df = df.sort_values(by='total_fee',ascending=False)
     output_dir = 'MY_OUTPUT'

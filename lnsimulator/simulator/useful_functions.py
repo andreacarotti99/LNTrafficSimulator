@@ -41,3 +41,8 @@ def compute_total_fees(all_router_fees):
     # group the dataframe by 'node' and sum the 'fee' column
     total_fees = all_router_fees.groupby('node')['fee'].sum().to_dict()
     return total_fees
+
+
+def get_hcn(d, k):
+    sorted_items = sorted(d.items(), key=lambda x: x[1], reverse=True)
+    return [key for key, value in sorted_items[:k]]

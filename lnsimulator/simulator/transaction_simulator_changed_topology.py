@@ -42,6 +42,7 @@ class TransactionSimulatorDifferentTopologies():
         total_depletions_list = []
         avg_degree_list = []
         G_list = []
+        routed_transactions_list = []
 
         edges_tmp = self.edges.copy()
 
@@ -96,7 +97,7 @@ class TransactionSimulatorDifferentTopologies():
                 print("Using weight='%s' for the simulation" % weight)
             print("Transactions simulated on original graph STARTED..")
 
-            shortest_paths, hashed_transactions, all_router_fees, total_depletions = get_shortest_paths(capacity_map_iteration, G, self.transactions, hash_transactions=with_node_removals, cost_prefix="original_", weight=weight, required_length=required_length)
+            shortest_paths, hashed_transactions, all_router_fees, total_depletions, routed_transactions = get_shortest_paths(capacity_map_iteration, G, self.transactions, hash_transactions=with_node_removals, cost_prefix="original_", weight=weight, required_length=required_length)
 
             print("\nPath discovered for each transaction:")
             for h in range(shortest_paths.shape[0]):
@@ -135,12 +136,13 @@ class TransactionSimulatorDifferentTopologies():
             total_depletions_list.append(total_depletions)
             avg_degree_list.append(avg_degree(G))
             G_list.append(G)
+            routed_transactions_list.append(routed_transactions)
 
             transactions = self.transactions
             successful_transactions = transactions[transactions['success'] == True]
 
         # print(shortest_paths_list)
-        return shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, G_list, avg_degree_list
+        return shortest_paths_list, alternative_paths_list, all_router_fees_list, total_depletions_list, successful_transactions, G_list, avg_degree_list, routed_transactions_list
 
 
 
